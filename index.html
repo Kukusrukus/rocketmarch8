@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>С 8 марта</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f5f0;
+    --ink: #2a2420;
+    --blush: #e8b4a0;
+    --sage: #8a9e8c;
+    --cream: #f2ece4;
+    --gold: #c9a96e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 28px; height: 28px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: left 0.15s ease, top 0.15s ease;
+    opacity: 0.6;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(232,180,160,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(138,158,140,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 60% 10%, rgba(201,169,110,0.06) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  /* Flower container */
+  #canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Main layout */
+  .scene {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+
+  /* Date tag */
+  .date-tag {
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 1.2s 0.3s ease forwards;
+  }
+
+  /* Title */
+  h1 {
+    font-size: clamp(3.5rem, 12vw, 9rem);
+    font-weight: 300;
+    line-height: 0.9;
+    letter-spacing: -0.01em;
+    text-align: center;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeUp 1.4s 0.5s ease forwards;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--blush);
+    font-weight: 300;
+  }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 36px 0;
+    opacity: 0;
+    animation: fadeUp 1.2s 0.8s ease forwards;
+  }
+  .divider-line {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold));
+  }
+  .divider-line:last-child {
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
+  .divider-ornament {
+    font-size: 18px;
+    color: var(--gold);
+    opacity: 0.8;
+  }
+
+  /* Text body */
+  .message {
+    max-width: 540px;
+    text-align: center;
+    font-size: clamp(1.15rem, 2.2vw, 1.35rem);
+    font-weight: 300;
+    line-height: 1.75;
+    color: #4a3f38;
+    opacity: 0;
+    animation: fadeUp 1.2s 1s ease forwards;
+  }
+  .message strong {
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  /* Interactive hint */
+  .hint {
+    margin-top: 56px;
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--sage);
+    opacity: 0;
+    animation: fadeUp 1s 1.6s ease forwards;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hint::before, .hint::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--sage);
+    opacity: 0.5;
+  }
+
+  /* Bloom button */
+  .bloom-btn {
+    margin-top: 36px;
+    padding: 14px 40px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink);
+    cursor: none;
+    transition: background 0.4s, color 0.4s;
+    opacity: 0;
+    animation: fadeUp 1s 1.8s ease forwards;
+  }
+  .bloom-btn:hover {
+    background: var(--gold);
+    color: white;
+  }
+
+  /* Floating petals (CSS-only) */
+  .petal {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    animation: petalFloat linear infinite;
+  }
+
+  @keyframes petalFloat {
+    0%   { transform: translateY(-20px) rotate(0deg) scale(0.8); opacity: 0; }
+    10%  { opacity: 0.6; }
+    90%  { opacity: 0.3; }
+    100% { transform: translateY(110vh) rotate(720deg) scale(1.1); opacity: 0; }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Bloom explosion on button click */
+  .burst {
+    position: fixed;
+    pointer-events: none;
+    z-index: 5;
+    animation: burstAnim 1.2s ease-out forwards;
+  }
+  @keyframes burstAnim {
+    from { transform: scale(0) rotate(0deg); opacity: 1; }
+    to   { transform: scale(3) rotate(45deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div id="canvas"></div>
+
+<!-- Floating petals (generated by JS) -->
+
+<main class="scene">
+  <p class="date-tag">8 марта &nbsp;·&nbsp; Международный женский день</p>
+
+  <h1>С праздником,<br><em>дорогие</em></h1>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <span class="divider-ornament">✦</span>
+    <div class="divider-line"></div>
+  </div>
+
+  <p class="message">
+    Сегодня — день, чтобы напомнить вам:<br>
+    вы <strong>вдохновляете, удивляете и украшаете</strong> всё вокруг.<br><br>
+    Пусть этой весной сбудется что-то,<br>
+    о чём вы ещё не успели помечтать.
+  </p>
+
+  <p class="hint">нажмите &mdash; и расцветут цветы</p>
+  <button class="bloom-btn" id="bloomBtn" onclick="bigBloom()">Расцвести</button>
+</main>
+
+<script>
+  // ─── Custom cursor ───────────────────────────────────────────
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  let mx = window.innerWidth/2, my = window.innerHeight/2;
+  let rx = mx, ry = my;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top  = my + 'px';
+  });
+  (function animRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(animRing);
+  })();
+
+  // ─── Flower factory ──────────────────────────────────────────
+  const canvas = document.getElementById('canvas');
+
+  const palettes = [
+    ['#e8b4a0','#d4887a','#f2d0c0'],
+    ['#c9a96e','#e0c898','#a87d4a'],
+    ['#8a9e8c','#b4c9b0','#6a8a6c'],
+    ['#c4a8c0','#e0c8e0','#a08898'],
+    ['#d0b8a8','#bca090','#e8d8c8'],
+  ];
+
+  function createFlower(x, y, size, fadeOut = true, bgOpacity = false) {
+    size = size || (20 + Math.random() * 20);
+    const pal = palettes[Math.floor(Math.random() * palettes.length)];
+    const petals = 5 + Math.floor(Math.random() * 4);
+    const totalSize = size * 2.2;
+
+    // SVG element positioned absolutely
+    const ns = 'http://www.w3.org/2000/svg';
+    const svgEl = document.createElementNS(ns, 'svg');
+    svgEl.setAttribute('width', totalSize);
+    svgEl.setAttribute('height', totalSize);
+    svgEl.style.cssText = `
+      position: absolute;
+      left: ${x - totalSize/2}px;
+      top:  ${y - totalSize/2}px;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      opacity: ${bgOpacity ? 0.15 : 0};
+    `;
+
+    const cx = totalSize / 2;
+    const cy = totalSize / 2;
+    const angleStep = (2 * Math.PI) / petals;
+
+    for (let i = 0; i < petals; i++) {
+      const angle = angleStep * i;
+      const px = cx + Math.cos(angle) * size * 0.52;
+      const py = cy + Math.sin(angle) * size * 0.52;
+      const ell = document.createElementNS(ns, 'ellipse');
+      ell.setAttribute('cx', px);
+      ell.setAttribute('cy', py);
+      ell.setAttribute('rx', size * 0.36);
+      ell.setAttribute('ry', size * 0.2);
+      ell.setAttribute('fill', pal[0]);
+      ell.setAttribute('opacity', '0.82');
+      ell.setAttribute('transform', `rotate(${angle * 180/Math.PI + 90} ${px} ${py})`);
+      svgEl.appendChild(ell);
+    }
+
+    const inner = document.createElementNS(ns, 'circle');
+    inner.setAttribute('cx', cx); inner.setAttribute('cy', cy);
+    inner.setAttribute('r', size * 0.22);
+    inner.setAttribute('fill', pal[1]);
+    svgEl.appendChild(inner);
+
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+    dot.setAttribute('r', size * 0.09);
+    dot.setAttribute('fill', pal[2]);
+    svgEl.appendChild(dot);
+
+    canvas.appendChild(svgEl);
+
+    if (!bgOpacity) {
+      requestAnimationFrame(() => { svgEl.style.opacity = '1'; });
+    }
+
+    if (fadeOut) {
+      const ttl = 3500 + Math.random() * 2500;
+      setTimeout(() => {
+        svgEl.style.opacity = '0';
+        setTimeout(() => svgEl.remove(), 600);
+      }, ttl);
+    }
+  }
+
+  // ─── Mouse trail ─────────────────────────────────────────────
+  let lastFlower = 0;
+  document.addEventListener('mousemove', e => {
+    const now = Date.now();
+    if (now - lastFlower < 130) return;
+    lastFlower = now;
+    createFlower(e.clientX, e.clientY, 12 + Math.random() * 16);
+  });
+
+  // ─── Ambient petals ──────────────────────────────────────────
+  const petalColors = ['#e8b4a0','#c9a96e','#8a9e8c','#d4b8c8','#f2d0c0'];
+  function spawnPetal() {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    const size = 6 + Math.random() * 10;
+    el.style.cssText = `
+      left: ${Math.random()*100}vw; top: -20px;
+      width: ${size}px; height: ${size*1.5}px;
+      border-radius: 50% 50% 50% 0;
+      background: ${petalColors[Math.floor(Math.random()*petalColors.length)]};
+      animation-duration: ${8 + Math.random()*10}s;
+      animation-delay: 0s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 20000);
+  }
+  setInterval(spawnPetal, 1400);
+
+  // ─── Big bloom ───────────────────────────────────────────────
+  function bigBloom() {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const count = 32;
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const angle = (i / count) * 2 * Math.PI + Math.random() * 0.3;
+        const dist  = 60 + Math.random() * Math.min(window.innerWidth, window.innerHeight) * 0.45;
+        createFlower(
+          cx + Math.cos(angle) * dist,
+          cy + Math.sin(angle) * dist,
+          18 + Math.random() * 30
+        );
+      }, i * 45);
+    }
+    // extra scattered ones
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => {
+        createFlower(
+          Math.random() * window.innerWidth,
+          Math.random() * window.innerHeight,
+          15 + Math.random() * 25
+        );
+      }, 200 + i * 80);
+    }
+  }
+
+  // ─── Background flowers ──────────────────────────────────────
+  window.addEventListener('load', () => {
+    const W = window.innerWidth, H = window.innerHeight;
+    [[80,90],[W-80,100],[60,H-90],[W-70,H-80],[W/2,55],[30,H/2],[W-45,H/2]].forEach(([x,y]) => {
+      createFlower(x, y, 22 + Math.random()*16, false, true);
+    });
+  });
+</script>
+</body>
+</html>
